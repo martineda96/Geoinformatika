@@ -18,8 +18,7 @@ import numpy as np
 ### DATA ###
 # nastavte cestu k ulozenemu souboru 'S2A_T33UVR_20180703T101029.tif'
 cesta = 'T:\martineda\Geoinformatika\Rastery'
-# Muzete vyuzit i jiny soubor, nejlepe vyrez multispektralniho snimku
-soubor = 'S2A_T33UVR_20180703T101029.tif'
+soubor = 'S2A_T33UVR_20180703T101029.tiff'
 
 #lze taky overit cestu by os.listdir(cesta)
 #pouzit zdvojena lomitka, jestli je problem v ceste \\Geoifnormatika\\Rastery
@@ -33,51 +32,58 @@ print(fn)
 # Funkce `rasterio.open()` přijímá řetězec cesty a vrací otevřený objekt datové sady.
 # Rasterio otevře data pomocí ovladače GDAL.
 # otevřete raster do proměnné ds
-pass
+
+ds = rasterio.open(fn)
+ds
 
 # Vypište datovy typ objektu
-pass
+print(type(ds))
 
 # 2. Čtení metadat rasteru (stavove attributy otevreneho objektu dataset)
 
 # Vypište stavový atribut `ds.closed`
-pass
+ds.closed
 # Vypište mod datasetu pomocí atributu `ds.mode`
-pass
+ds.mode
 
 # Metadata (vlastnosti) datasetu - take atributy objektu
 # Vypište počet kanalu v datasetu pomocí atribut `ds.count`
-pass
+ds.count #vypisuje pocet pasem
+
 # Vypište šířku pole v datasetu pomocí atribut `ds.width`
-pass
-# Vypište výšku pole v datasetu pomocí atribut `ds.width`
-pass
+ds.width #vrati pocet pixelu v rasteru na sirku
+#CTRL + C v konzoli se vrátí z chybnýho stavu
+
+# Vypište výšku pole v datasetu pomocí atribut `ds.height`
+ds.height #vyska v pixelech
+print(ds.width * ds.height) #pocet pixelu primitivne
 
 # Rasterio dataset má atribut meta, který poskytuje souhrnné informace včetně parametrů geotransformace
 # Vytvořte proměnnou meta z atributu `ds.width`
-pass
+meta = ds.width
 # Jaký datový typ je proměnná meta
-pass
+type(meta)
 # Vypište jednotlivé paramtery z proměnné meta
-pass
+for k in meta:
+    print(k,":", meta[k])
 
 # Indexy kanálu/pásem lze získat z atributu `ds.index`
 # Vypište je
-pass
+ds.index
 # a jejich datove typy pomocí atributu `ds.dtypes`
-pass
+ds.dtypes
 # Jaká je radiometrická hloubka pásem Sentinel-2?
 
 # Georeferencovani rasteru
 # Vypište minimální ohraničující obdélník (Bbox) datasetu z atributu `ds.bounds`
-pass
+ds.bounds
 # Vypište souřadnice levého horního rohu rasteru z atributu `ds.bounds.left`
-pass
+
 
 # Bbox je ziskan z geoprostorovych transformacnich atributu
 # ... afinní transformační matice, která mapuje umístění pixelů v souřadnicích (col, row) na prostorové pozice (x, y)
 # Vypište atribut geotransformace `ds.transform`
-pass
+
 
 # Součin této matice a tuple(0, 0), souřadnic sloupce a řádku levého horního rohu datové sady,
 # je prostorová poloha levého horního rohu.
@@ -87,7 +93,7 @@ pass
 pass
 # Vypište souřadnice pravého dolního rohu
 # Součin geotransformační matice a tuple(šířky, výšky) je prostorová poloha levého horního rohu
-pass
+#ds.transform*
 
 # Souřadnicový referenční systém - CRS
 # Vypište atribut CRS z yadatasetu pomocí `ds.crs`
@@ -100,13 +106,13 @@ pass
 ### ČTENÍ DAT RASTERU ###
 # Načtěte data z pásma 1 do proměnné B1 pomocí metody `read()` z data asetu ds
 # index pásma: 1
-pass
+B1 = ds.read(1) #indexa od 1 nikoliv od 0
 # Rasterio metoda .read() vrátí pole hodnot typu NumPy. Je to tak? Ověřte.
-pass
-#
+type(B1)
+
 
 # Jaký datový typ je použit pro jednotlivé hodnoty pole? Numpy atribut `.dtype`
-pass
+B1.dtype
 
 # Indexování honot v NumPy je podobné seznamu
 lst = [3, 6, 2, 8, 9]
@@ -115,13 +121,19 @@ print(lst[0])
 # poslední
 print(lst[-1])
 
+#x = 10, y = 20
+B1[20 10]
+
+#vybrat interval (trinact a jedenact uz to nebere)
+B1[10:13 10:11]
+
 # adresovani hodnot NumPy 2D pole je: B1[výška, šířka]
 # Proč?
 
 # Mějme tyto indexy pole
 x_ix = 100; y_ix = 150
 # Zjistěte hodnotu v těchto indexových souřadnicích
-pass
+B1[150, 100]
 
 # Indexovaní pomocí souřadnic
 # Datové sady mají metodu `DatasetReader.index()` pro získání indexů pole odpovídajících bodům
@@ -157,11 +169,14 @@ NIR = ds.read(4).astype(np.float32)
 print(f'Datovy typ cerveno pasma je: {RED.dtype}')
 
 # Vypočťete index a výsledek uložte do proměnné NDVI
-pass
+NDVI = (NIR - RED) / (NIR + RED) #(odrazivost vody - odraz chlorofilu)/norma
+NDVI
 # Ověřte datový typ
-pass
+NDVI.dtype
 # Vypište minimální a maximální hodnotu pomocí metod `.min()` a `.max()`
-pass
+#Na GITu má doc. Brodsky info k NumPy v Jupyter Notebooku
+NDVI.min()
+NDVI.max()
 
 # Více o NumPy? MLgeo
 
@@ -189,7 +204,7 @@ print(f'Metadata datasetu: {meta}')
 # nastavíme atribut dtype na rasterio float32
 meta["dtype"] = "float32"
 # počet kanálů = 1
-meta['count'] = 1
+meta['count'] = 12
 # komprese dat
 # Rasterio používá GDAL jako 'backend'.
 # Jaké kompresní metody jsou implementovány pod kterými zkratkami (kw)?
@@ -203,4 +218,3 @@ with rasterio.open(os.path.join(cesta, 'ndvi.tif'), 'w', **meta) as dst:
 if os.path.isfile(os.path.join(cesta, 'ndvi.tif')):
     print('Soubor ndvi.tif je zapsan na disk.')
     print(f"Velikost souboru je: {os.path.getsize(os.path.join(cesta, 'ndvi.tif')) / 1000000} MB.")
-
